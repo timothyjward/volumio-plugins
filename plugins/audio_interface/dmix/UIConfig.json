@@ -1,0 +1,156 @@
+{
+    "page": {
+      "label": "Dmix Configuration"
+    },
+    "sections": [
+      {
+        "id": "Configuration",
+        "element": "section",
+        "label": "Configuration",
+        "icon": "fa-cogs",
+        "description": "The Sample Rate, Buffer Configuration, and other Dmix settings",
+        "onSave": {
+          "type": "plugin",
+          "endpoint": "audio_interface/dmix",
+          "method": "updateConfig"
+        },
+        "saveButton": {
+          "label": "Save",
+          "data": [
+            "sample_rate",
+            "sample_depth",
+            "play_silence",
+            "channels",
+            "period_time",
+            "period_size",
+            "buffer_size",
+            "loop_latency",
+            "loop_subdevice"
+          ]
+        },
+        "content": [
+          {
+            "id": "sample_rate",
+            "element": "select",
+            "label": "Sample Rate",
+			      "description": "The Dmix sample rate. All audio will be resampled to this rate for mixing.",
+			      "value": {
+				      "value": "44100",
+				      "label": "44.1 kHz (CD Audio)"
+			      },
+			      "options": [
+              {"value": "44100", "label": "44.1 kHz (CD Audio)"},
+              {"value": "48000", "label": "48 kHz"},
+              {"value": "88200", "label": "88.2 kHz"},
+              {"value": "96000", "label": "96 kHz"},
+              {"value": "176400", "label": "176.4 kHz"},
+              {"value": "192000", "label": "192 kHz"}
+            ]
+          },
+          {
+            "id": "sample_depth",
+            "element": "select",
+            "label": "Sample Depth",
+			      "description": "The Dmix sample depth. All audio will be resampled to this depth for mixing.",
+			      "value": {
+				      "value": "S16_LE",
+				      "label": "16 bit (CD Audio)"
+			      },
+			      "options": [
+              {"value": "S16_LE", "label": "16 bit (CD Audio)"},
+              {"value": "S24_LE", "label": "24 bit"},
+              {"value": "S32_LE", "label": "32 bit"}
+            ]
+          },
+          {
+            "id": "play_silence",
+            "element": "switch",
+            "label": "Play background Silence",
+            "descripton": "Plays silence in the background to avoid pops and clicks when starting audio with some DACs.",
+            "value": true
+          },
+          {
+            "id": "show_advanced",
+            "element": "switch",
+            "label": "Show Advanced Options",
+            "descripton": "Show advanced configuration options that are not normally needed",
+            "value": false
+          },
+          {
+            "id": "channels",
+            "type": "text",
+            "element": "input",
+            "label": "Channels",
+            "description": "The number of channels to mix. Should almost always be 2 channels for stereo output",
+            "value": "2",
+            "visibleIf": {
+              "field": "show_advanced",
+              "value": true
+            }
+          },
+          {
+            "id": "period_time",
+            "type": "text",
+            "element": "input",
+            "label": "Period Time",
+            "description": "The dmix period time in µs",
+            "value": "0",
+            "visibleIf": {
+              "field": "show_advanced",
+              "value": true
+            }
+          },
+          {
+            "id": "period_size",
+            "type": "text",
+            "element": "input",
+            "label": "Period Size",
+            "description": "The dmix period size in frames. Must be a power of 2.",
+            "value": "1024",
+            "visibleIf": {
+              "field": "show_advanced",
+              "value": true
+            }
+          },
+          {
+            "id": "buffer_size",
+            "type": "text",
+            "element": "input",
+            "label": "Buffer Size",
+            "description": "The dmix buffer size in frames. Must be a power of 2.",
+            "value": "8192",
+            "visibleIf": {
+              "field": "show_advanced",
+              "value": true
+            }
+          },
+          {
+            "id": "loop_latency",
+            "type": "text",
+            "element": "input",
+            "label": "Audio Latency",
+            "description": "The controllable latency (delay) in µs added when routing audio using this plugin. Lower values decrease latency but increase CPU usage, and very low values may be unstable.",
+            "value": "50000",
+            "visibleIf": {
+              "field": "show_advanced",
+              "value": true
+            }
+          },
+          {
+            "id": "loop_subdevice",
+            "element": "select",
+            "label": "Loopback Subdevice",
+            "description": "The Loopback subdevice that should be used for Dmix output. Must not clash with Loopback subdevices used anywhere else in the system.",
+            "value": "5",
+			      "options": [
+              "0", "1", "2", "3", "4", "5", "6", "7"
+            ],
+            "visibleIf": {
+              "field": "show_advanced",
+              "value": true
+            }
+          }
+        ]
+      }
+    ]
+  }

@@ -1,0 +1,21 @@
+{
+	"name": "dmix",
+	"version": "1.0.0",
+	"description": "Enable the Dmix software mixer for Volumio. Useful if you see errors about hardware being busy, or if you get pops/clicks with some DAC hardware",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "timothyjward",
+	"license": "ISC",
+	"volumio_info": {
+		"prettyName": "Dmix",
+		"icon": "fa-lightbulb-o",
+		"plugin_type": "audio_interface"
+	},
+	"dependencies": {
+		"fs-extra": "^0.28.0",
+		"kew": "^0.7.0",
+		"v-conf": "^1.4.0"
+	}
+}

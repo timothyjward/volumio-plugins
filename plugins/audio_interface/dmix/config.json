@@ -1,0 +1,38 @@
+{
+  "sample_rate": {
+    "type": "string",
+    "value": "44100"
+  },
+  "sample_depth": {
+    "type": "string",
+    "value": "S16_LE"
+  },
+  "play_silence": {
+    "type": "boolean",
+    "value": true
+  },    
+  "channels": {
+    "type": "string",
+    "value": "2" 
+  },
+  "period_time": {
+    "type": "string",
+    "value": "0"
+  },
+  "period_size": {
+    "type": "string",
+    "value": "1024"
+  },
+  "buffer_size": {
+    "type": "string",
+    "value": "8192"
+  },
+  "loop_latency": {
+    "type": "string",
+    "value": "50000"
+  },
+  "loop_subdevice": {
+    "type": "string",
+    "value": "5"
+  }
+}
