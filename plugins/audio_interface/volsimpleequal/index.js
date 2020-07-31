@@ -28,7 +28,20 @@
   var configFile = this.commandRouter.pluginManager.getConfigurationFile(this.context, 'config.json');
   self.config = new(require('v-conf'))();
   self.config.loadFile(configFile);
-  return libQ.resolve();
+  
+  var defer = libQ.defer();
+  
+  self.modprobeLoopBackDevice()
+    .then(function(e) {
+      self.logger.info('Volsimpleequal Started');
+      defer.resolve();
+    })
+    .fail(function(e) {
+      self.logger.warn('Failed to start Volsimpleequal', e);
+      defer.reject(e);
+    });
+    
+    return defer.promise;
  };
 
  ControllerVolsimpleequal.prototype.getConfigurationFiles = function() {
@@ -36,6 +49,45 @@
  };
 
  // Plugin methods -----------------------------------------------------------------------------
+ //here we load snd_aloop module to provide a Loopback device 
+ ControllerVolsimpleequal.prototype.modprobeLoopBackDevice = function() {
+  var self = this;
+  var defer = libQ.defer();
+
+  exec("/usr/bin/sudo /sbin/modprobe snd_aloop index=7 pcm_substreams=2", {
+   uid: 1000,
+   gid: 1000
+  }, function(error, stdout, stderr) {
+   if (error) {
+    self.logger.info('failed to load snd_aloop ' + error);
+   } else {
+    self.commandRouter.pushConsoleMessage('snd_aloop loaded');
+   }
+   defer.resolve();
+  });
+  return defer.promise;
+ };
+
+ // here we make the bridge between Loopback and equal
+ ControllerVolsimpleequal.prototype.bridgeLoopBackequal = function() {
+  var self = this;
+  var defer = libQ.defer();
+  setTimeout(function() {
+  exec("/usr/bin/sudo /bin/systemctl start volsimpleequal.service", {
+   uid: 1000,
+   gid: 1000
+  }, function(error, stdout, stderr) {
+   if (error) {
+    self.logger.info('failed to bridge ' + error);
+   } else {
+    self.commandRouter.pushConsoleMessage('Alsaloop bridge ok');
+    defer.resolve();
+   }
+  });
+
+   return defer.promise;
+  }, 6500)
+ };
 
  //here we send equalizer settings
  ControllerVolsimpleequal.prototype.sendequal = function(defer) {
@@ -88,7 +140,7 @@
     exec("/usr/bin/amixer -D volumioSimpleEqual cset numid=" + [i] + " " + x , {
     uid: 1000,
     gid: 1000
-   }, function(error, stdout, stderr) {})
+   }, function(error, stdout, stderr) {});
   }
  };
 
@@ -102,13 +154,16 @@
 
   var defer = libQ.defer();
   self.commandRouter.executeOnPlugin('audio_interface', 'alsa_controller', 'updateALSAConfigFile')
-   .then(function(e) {
-    self.logger.info('Volsimpleequal Started');
-    defer.resolve();
-   })
-   .fail(function(e) {
-    defer.reject(new Error());
-   });
+    .then(function(e) {
+      return self.bridgeLoopBackequal();
+    })
+    .then(function(e) {
+      self.logger.info('Volsimpleequal Started');
+      defer.resolve();
+    })
+    .fail(function(e) {
+      defer.reject(new Error());
+    });
    return defer.promise;
  };
 
