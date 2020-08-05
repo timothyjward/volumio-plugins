@@ -1,32 +1,41 @@
 #balbuze's config file
 # There are four sets of four numbers (Enable/Disable, Frequency, Bandwidth, Gain). The final number is overall gain.
-# - Enable/disable:	1/0
-# - Frequency:		20 - 14000 Hz (Center Frequency)
-# - Bandwidth:		0.12 - 8 (Q factor) must have leading 0 if < 1
-# - Gain:			-24 - 24 dB
-# - Master Gain		-24 - 24 dB
+# - Enable/disable:   1/0
+# - Frequency:        20 - 14000 Hz (Center Frequency)
+# - Bandwidth:        0.12 - 8 (Q factor) must have leading 0 if < 1
+# - Gain:             -24 - 24 dB
+# - Master Gain       -24 - 24 dB
 #
 
 
+# For some reason the plug plugin doesn't do FLOAT conversion properly and
+# gives "snd1_pcm_hw_param_get_min: Assertion `!snd_interval_empty(i)' failed"
+#
+# We therefore use the lfloat plugin - incoming audio must be linear
+pcm.volumioParametricEqual {
+    type lfloat
+    slave.pcm    "volParametricEqual"
+    slave.format "FLOAT"
+}
 
-pcm.outparameq {
+pcm.volParametricEqual {
     type ladspa
-    slave.pcm "plughw:${hwout}"
+    slave.pcm "volumioParametricEqualConvert"
     path "/usr/lib/ladspa"
     plugins [ 
-		{
-		id 2609
-		label "EqFA4p"
-		input {
-			controls [ ${p11} ${p21} ${p31} ${p41} ${mg} ]
-			}
-    		}
- ]
+        {
+        id 2609
+        label "EqFA4p"
+        input {
+            controls [ ${p11} ${p21} ${p31} ${p41} ${mg} ]
+            }
+        }
+    ]
 }
 
-pcm.outplugin {
-    type plug
-#	rate 44100
-    slave.pcm "${hwouts}"
+# Convert back to linear samples, using 24 bit to preserve quality
+pcm.volumioParametricEqualConvert {
+    type lfloat
+    slave.pcm    "postParametricEqual"
+    slave.format "S24_LE"
 }
-

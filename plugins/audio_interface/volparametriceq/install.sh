@@ -1,9 +1,8 @@
 #!/bin/bash
 
 echo "Installing volparametriceq dependencies"
-echo "unload Loopback module if exists"
-sudo rmmod snd_aloop
-#su[do apt-get update
+
+#sudo apt-get update
 #sudo apt-get -y install caps
 libpath=/data/plugins/audio_interface/volparametriceq
 derrormess="Failed to extract caps"
@@ -33,6 +32,7 @@ else
 	exit -1
 fi
 
+echo "Clearing configuration from previous installations"
 if [ ! -f "/data/configuration/audio_interface/volparametriceq/config.json" ];
 	then
 		echo "file doesn't exist, nothing to do"
@@ -40,22 +40,6 @@ if [ ! -f "/data/configuration/audio_interface/volparametriceq/config.json" ];
 		echo "File exists removing it"
 		sudo rm /data/configuration/audio_interface/volparametriceq/config.json
 fi
-echo "Checking if volparametriceq services exist"
-if [ ! -f "/etc/systemd/system/volparametriceq.service" ];
-	then
-		echo "file volparametriceq.service doesn't exist, creating"
-		cp /data/plugins/audio_interface/volparametriceq/volparametriceq.tar.gz /
-		cd /
-		sudo tar -xvf volparametriceq.tar.gz
-		rm /volsimpleequal.tar.gz
-	else
-		echo "volparametriceq.service removing to install new version !"
-		sudo rm /etc/systemd/system/volparametriceq.service
-		cp /data/plugins/audio_interface/volparametriceq/volparametriceq.tar.gz /
-		cd /
-		sudo tar -xvf volparametriceq.tar.gz
-		rm /volparametriceq.tar.gz
-fi
-sudo systemctl daemon-reload
+
 #required to end the plugin install
 echo "plugininstallend"
