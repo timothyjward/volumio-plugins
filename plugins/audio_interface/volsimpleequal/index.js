@@ -29,19 +29,9 @@
   self.config = new(require('v-conf'))();
   self.config.loadFile(configFile);
   
-  var defer = libQ.defer();
-  
-  self.modprobeLoopBackDevice()
-    .then(function(e) {
-      self.logger.info('Volsimpleequal Started');
-      defer.resolve();
-    })
-    .fail(function(e) {
-      self.logger.warn('Failed to start Volsimpleequal', e);
-      defer.reject(e);
-    });
+  self.logger.info('Volsimpleequal Started');
     
-    return defer.promise;
+  return libQ.resolve();
  };
 
  ControllerVolsimpleequal.prototype.getConfigurationFiles = function() {
@@ -49,49 +39,12 @@
  };
 
  // Plugin methods -----------------------------------------------------------------------------
- //here we load snd_aloop module to provide a Loopback device 
- ControllerVolsimpleequal.prototype.modprobeLoopBackDevice = function() {
-  var self = this;
-  var defer = libQ.defer();
-
-  exec("/usr/bin/sudo /sbin/modprobe snd_aloop index=7 pcm_substreams=2", {
-   uid: 1000,
-   gid: 1000
-  }, function(error, stdout, stderr) {
-   if (error) {
-    self.logger.info('failed to load snd_aloop ' + error);
-   } else {
-    self.commandRouter.pushConsoleMessage('snd_aloop loaded');
-   }
-   defer.resolve();
-  });
-  return defer.promise;
- };
-
- // here we make the bridge between Loopback and equal
- ControllerVolsimpleequal.prototype.bridgeLoopBackequal = function() {
-  var self = this;
-  var defer = libQ.defer();
-  setTimeout(function() {
-  exec("/usr/bin/sudo /bin/systemctl start volsimpleequal.service", {
-   uid: 1000,
-   gid: 1000
-  }, function(error, stdout, stderr) {
-   if (error) {
-    self.logger.info('failed to bridge ' + error);
-   } else {
-    self.commandRouter.pushConsoleMessage('Alsaloop bridge ok');
-    defer.resolve();
-   }
-  });
-
-   return defer.promise;
-  }, 6500)
- };
 
  //here we send equalizer settings
- ControllerVolsimpleequal.prototype.sendequal = function(defer) {
+ ControllerVolsimpleequal.prototype.sendequal = function() {
   var self = this;
+  var defer = libQ.defer();
+  
   var eqprofile = self.config.get('eqprofile')
   var enablemyeq = self.config.get('enablemyeq')
   var scoef
@@ -128,20 +81,47 @@
   //equalizer offset
   var z = 60;
   var coefarray = scoef.split(',');
+  
+  
+  var configFile = "/data/configuration/audio_interface/volsimpleequal/.alsaequal.bin"
+  var permissionsSet = false;
+  
+  if(fs.existsSync(configFile)) {	  
+    execSync("/usr/bin/sudo /bin/chown volumio:audio " + configFile);
+    execSync("/bin/chmod 664 " + configFile);
+    permissionsSet = true;
+  }
 
   // for every value that we put in array, we set the according bar value
+  var pending = [];
   for (var i in coefarray) {
+	let forDefer = libQ.defer();
+	pending.push(forDefer.promise);
+	
     j = i
     i = ++i
     k = parseInt(coefarray[j], 10);
     x = k + z;
   
-    console.log("/bin/echo /usr/bin/amixer -D volumioSimpleEqual cset numid=" + [i] + " " + x )
-    exec("/usr/bin/amixer -D volumioSimpleEqual cset numid=" + [i] + " " + x , {
+    console.log("/bin/echo /usr/bin/amixer -D volSimpleEqual cset numid=" + [i] + " " + x )
+    exec("/usr/bin/amixer -D volSimpleEqual cset numid=" + [i] + " " + x , {
     uid: 1000,
     gid: 1000
-   }, function(error, stdout, stderr) {});
+   }, function(error, stdout, stderr) {
+	 try {
+       if(!permissionsSet) {	  
+         execSync("/usr/bin/sudo /bin/chown volumio:audio " + configFile);
+         execSync("/bin/chmod 664 " + configFile);
+         permissionsSet = true;
+       }
+       forDefer.resolve();
+	 } catch (err) {
+       forDefer.reject(err);
+	 }
+   });
   }
+  
+  return libQ.all(pending);
  };
 
  ControllerVolsimpleequal.prototype.onStop = function() {
@@ -154,9 +134,6 @@
 
   var defer = libQ.defer();
   self.commandRouter.executeOnPlugin('audio_interface', 'alsa_controller', 'updateALSAConfigFile')
-    .then(function(e) {
-      return self.bridgeLoopBackequal();
-    })
     .then(function(e) {
       self.logger.info('Volsimpleequal Started');
       defer.resolve();
@@ -278,14 +255,12 @@
  //here we save the equalizer settings
  ControllerVolsimpleequal.prototype.savealsaequal = function(data) {
   var self = this;
-  var defer = libQ.defer();
   self.config.set('enablemyeq', data['enablemyeq']);
   self.config.set('eqprofile', data['eqprofile'].value);
   self.config.set('coef', data['coef']);
   self.logger.info('Equalizer Configurations have been set');
   self.commandRouter.pushToastMessage('success', self.commandRouter.getI18nString("COMMON.CONFIGURATION_UPDATE"));
-  self.sendequal(defer);
-  return defer.promise;
+  return self.sendequal();
  };
 
 //here we save the equalizer preset
