@@ -2086,15 +2086,6 @@ ControllerSpop.prototype.createSPOPDFile = function () {
             }
             var outdev = self.commandRouter.sharedVars.get('alsa.outputdevice');
 
-            if (outdev === 'softvolume') {
-                var hwdev = 'softvolume';
-            } else {
-                if (outdev.indexOf(',') >= 0) {
-                    var hwdev = 'plughw:'+outdev;
-                } else {
-                    var hwdev = 'plughw:'+outdev+',0';
-                }
-            }
             var bitrate = self.config.get('bitrate');
             var bitratevalue = 'true';
             if (bitrate == false) {
@@ -2105,8 +2096,7 @@ ControllerSpop.prototype.createSPOPDFile = function () {
             var conf2 = conf1.replace("${password}", self.config.get('password'));
             var conf3 = conf2.replace("${refresh_token}", self.config.get('refresh_token'));
 			var conf4 = conf3.replace("${bitrate}", self.config.get('bitrate'));
-			var conf5 = conf4.replace("${outdev}", hwdev);
-            
+			var conf5 = conf4.replace("${outdev}", outdev);
 
             fs.writeFile("/etc/spopd.conf", conf5, 'utf8', function (err) {
                 if (err)
