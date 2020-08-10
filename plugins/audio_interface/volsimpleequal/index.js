@@ -81,29 +81,13 @@
   //equalizer offset
   var z = 60;
   var coefarray = scoef.split(',');
-  
-  
-  var configFile = "/data/configuration/audio_interface/volsimpleequal/.alsaequal.bin"
-  var permissionsSet = false;
-  
-  if(fs.existsSync(configFile)) {	  
-    execSync("/usr/bin/sudo /bin/chown volumio:audio " + configFile, {
-        uid: 1000,
-        gid: 1000
-       });
-    execSync("/bin/chmod 664 " + configFile, {
-        uid: 1000,
-        gid: 1000
-       });
-    permissionsSet = true;
-  }
 
   // for every value that we put in array, we set the according bar value
   var pending = [];
   for (var i in coefarray) {
-	let forDefer = libQ.defer();
-	pending.push(forDefer.promise);
-	
+    let forDefer = libQ.defer();
+    pending.push(forDefer.promise);
+    
     j = i
     i = ++i
     k = parseInt(coefarray[j], 10);
@@ -114,22 +98,11 @@
     uid: 1000,
     gid: 1000
    }, function(error, stdout, stderr) {
-	 try {
-       if(!permissionsSet) {	  
-         execSync("/usr/bin/sudo /bin/chown volumio:audio " + configFile, {
-        	    uid: 1000,
-        	    gid: 1000
-        	   });
-         execSync("/bin/chmod 664 " + configFile, {
-        	    uid: 1000,
-        	    gid: 1000
-        	   });
-         permissionsSet = true;
-       }
+     if(!error) {
        forDefer.resolve();
-	 } catch (err) {
-       forDefer.reject(err);
-	 }
+       } else {
+       forDefer.reject(error);
+     }
    });
   }
   
@@ -147,6 +120,35 @@
   var defer = libQ.defer();
   self.commandRouter.executeOnPlugin('audio_interface', 'alsa_controller', 'updateALSAConfigFile')
     .then(function(e) {
+      var aplayDefer = libQ.defer();
+      // Play a short sample of silence to initialise the config file
+      exec("dd if=/dev/zero iflag=count_bytes count=128 | aplay -f cd -D volumioSimpleEqual", {uid: 1000,gid: 1000}, function(error, stdout, stderr) {
+        if(error) {
+          self.logger.warn("An error occurred when trying to initialize Volsimpleequal", error);
+        }
+        aplayDefer.resolve();
+      });
+      return aplayDefer.promise;
+    })
+    .then(function(e) {
+      
+      var configFile = "/data/configuration/audio_interface/volsimpleequal/.alsaequal.bin"
+      var configDefer = libQ.defer();
+        
+      if(fs.existsSync(configFile)) {
+        exec("/bin/chown volumio:audio " + configFile + "; /bin/chmod 664 " + configFile, 
+            {uid: 1000,gid: 1000}, function(error, stdout, stderr) {
+              if(error) {
+                self.logger.warn("An error occurred when trying to initialize Volsimpleequal", error);
+              }
+              configDefer.resolve();
+            });
+      } else {
+        self.logger.warn("No equaliser config file exists - unable to initialize Volsimpleequal");
+        configDefer.reject("No equaliser config file exists")
+      }
+    })
+    .then(function(e) {
       self.logger.info('Volsimpleequal Started');
       defer.resolve();
     })
@@ -162,7 +164,7 @@
 
  ControllerVolsimpleequal.prototype.onInstall = function() {
   var self = this;
-  //	//Perform your installation tasks here
+  //Perform your installation tasks here
  };
 
  ControllerVolsimpleequal.prototype.onUninstall = function() {
@@ -181,11 +183,11 @@
     //equalizer section
     uiconf.sections[0].content[0].value = self.config.get('enablemyeq');
   //  uiconf.sections[0].content[1].value = self.config.get('eqprofile');
-  	var value;
+    var value;
     value = self.config.get('eqprofile');
     self.configManager.setUIConfigParam(uiconf, 'sections[0].content[1].value.value', value);
     self.configManager.setUIConfigParam(uiconf, 'sections[0].content[1].value.label', self.getLabelForSelect(self.configManager.getValue(uiconf, 'sections[0].content[1].options'), value));
-	
+  
     //for coef in equalizer
     // we retrieve the coefficient configuration
     var coefconf = self.config.get('coef');
