@@ -87,8 +87,14 @@
   var permissionsSet = false;
   
   if(fs.existsSync(configFile)) {	  
-    execSync("/usr/bin/sudo /bin/chown volumio:audio " + configFile);
-    execSync("/bin/chmod 664 " + configFile);
+    execSync("/usr/bin/sudo /bin/chown volumio:audio " + configFile, {
+        uid: 1000,
+        gid: 1000
+       });
+    execSync("/bin/chmod 664 " + configFile, {
+        uid: 1000,
+        gid: 1000
+       });
     permissionsSet = true;
   }
 
@@ -110,8 +116,14 @@
    }, function(error, stdout, stderr) {
 	 try {
        if(!permissionsSet) {	  
-         execSync("/usr/bin/sudo /bin/chown volumio:audio " + configFile);
-         execSync("/bin/chmod 664 " + configFile);
+         execSync("/usr/bin/sudo /bin/chown volumio:audio " + configFile, {
+        	    uid: 1000,
+        	    gid: 1000
+        	   });
+         execSync("/bin/chmod 664 " + configFile, {
+        	    uid: 1000,
+        	    gid: 1000
+        	   });
          permissionsSet = true;
        }
        forDefer.resolve();
