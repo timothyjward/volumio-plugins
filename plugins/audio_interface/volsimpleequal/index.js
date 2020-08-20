@@ -118,45 +118,43 @@
   var self = this;
 
   var defer = libQ.defer();
-  self.commandRouter.executeOnPlugin('audio_interface', 'alsa_controller', 'updateALSAConfigFile')
-    .then(function(e) {
-      var aplayDefer = libQ.defer();
-      // Play a short sample of silence to initialise the config file
-      exec("dd if=/dev/zero iflag=count_bytes count=128 | aplay -f cd -D volumioSimpleEqual", {uid: 1000,gid: 1000}, function(error, stdout, stderr) {
-        if(error) {
-          self.logger.warn("An error occurred when trying to initialize Volsimpleequal", error);
-        }
-        aplayDefer.resolve();
-      });
-      return aplayDefer.promise;
-    })
-    .then(function(e) {
+  var aplayDefer = libQ.defer();
+  
+  // Play a short sample of silence to initialise the config file
+  exec("dd if=/dev/zero iflag=count_bytes count=128 | aplay -f cd -D volumioSimpleEqual", {uid: 1000,gid: 1000}, function(error, stdout, stderr) {
+    if(error) {
+      self.logger.warn("An error occurred when trying to initialize Volsimpleequal", error);
+    }
+    aplayDefer.resolve();
+  });
+  
+  aplayDefer.promise.then(function(e) {
       
-      var configFile = "/data/configuration/audio_interface/volsimpleequal/.alsaequal.bin"
-      var configDefer = libQ.defer();
-        
-      if(fs.existsSync(configFile)) {
-        exec("/bin/chown volumio:audio " + configFile + "; /bin/chmod 664 " + configFile, 
-            {uid: 1000,gid: 1000}, function(error, stdout, stderr) {
-              if(error) {
-                self.logger.warn("An error occurred when trying to initialize Volsimpleequal", error);
-              }
-              configDefer.resolve();
-            });
-      } else {
-        self.logger.warn("No equaliser config file exists - unable to initialize Volsimpleequal");
-        configDefer.reject("No equaliser config file exists")
-      }
-    })
-    .then(function(e) {
-      self.logger.info('Volsimpleequal Started');
-      defer.resolve();
-    })
-    .fail(function(e) {
-      defer.reject(new Error());
-    });
-   return defer.promise;
- };
+    var configFile = "/data/configuration/audio_interface/volsimpleequal/.alsaequal.bin"
+    var configDefer = libQ.defer();
+      
+    if(fs.existsSync(configFile)) {
+      exec("/bin/chown volumio:audio " + configFile + "; /bin/chmod 664 " + configFile, 
+          {uid: 1000,gid: 1000}, function(error, stdout, stderr) {
+            if(error) {
+              self.logger.warn("An error occurred when trying to initialize Volsimpleequal", error);
+            }
+            configDefer.resolve();
+          });
+    } else {
+      self.logger.warn("No equaliser config file exists - unable to initialize Volsimpleequal");
+      configDefer.reject("No equaliser config file exists")
+    }
+  })
+  .then(function(e) {
+    self.logger.info('Volsimpleequal Started');
+    defer.resolve();
+  })
+  .fail(function(e) {
+    defer.reject(new Error());
+  });
+  return defer.promise;
+};
 
  ControllerVolsimpleequal.prototype.onRestart = function() {
   var self = this;

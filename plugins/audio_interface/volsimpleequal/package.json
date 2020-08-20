@@ -12,7 +12,8 @@
 		"prettyName": "Volumio simple equalizer",
 		"plugin_type": "audio_interface",
 		"icon": "fa-sliders fa-rotate-90",
-		"boot_priority": 10
+		"boot_priority": 10,
+		"has_alsa_contribution": true
 	},
 	"dependencies": {
 		"fs-extra": "^0.28.0",
